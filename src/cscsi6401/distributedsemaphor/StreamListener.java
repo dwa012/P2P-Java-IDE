@@ -29,8 +29,12 @@ class StreamListener extends Thread {
         while (true) {
             try {
                 
+//                System.out.println("Listener waiting");
+                
                 //read the message form the stream
                 String read = reader.readLine();
+                
+//                System.out.println("Received: " + read);
                 
                 /*
                  * message[0] = sender

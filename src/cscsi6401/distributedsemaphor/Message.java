@@ -1,15 +1,16 @@
-/*
- * To change this template, choose Tools | Templates and open the template in
- * the editor.
- */
 package cscsi6401.distributedsemaphor;
 
 /**
- *
- * @author daniel
+ * This class models a messages that are sent by a distributed semaphore.
+ * 
+ * @author Daniel Ward
+ * @date November 25, 2011
  */
 class Message {
     
+    /**
+     * Some message constants to represent  type of messages sent
+     */
     public static final String ACK = "ack";
     public static final String VOP = "vop";
     public static final String POP = "pop";
@@ -17,10 +18,10 @@ class Message {
     public static final String REQ_V = "reqV";
     
     
-    private int numberOfACKs;
+    private int numberOfACKs; //the number of acknowledgements for this Message
     
-    private long timeStamp;
-    private String message;
+    private long timeStamp; //the timestamp associated with this Message
+    private String message; //t
     private String sender;
 
     
@@ -51,4 +52,7 @@ class Message {
         return numberOfACKs;
     }    
     
+    public String toString(){
+        return "{time: " + timeStamp + ", message: " + message + ", sender: " + sender + "}";
+    }
 }
