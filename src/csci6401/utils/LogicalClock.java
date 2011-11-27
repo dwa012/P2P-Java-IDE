@@ -1,4 +1,4 @@
-package cscsi6401.distributedsemaphor;
+package csci6401.utils;
 
 /**
  * This class models a logical clock

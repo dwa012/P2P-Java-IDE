@@ -18,31 +18,41 @@ import java.util.logging.Logger;
  * @author daniel
  */
 public class Main {
-    public static void main(String[] args){
-        String[][] config = {{"localhost","5001"},{"localhost","5002"}};
-        DistributedSemaphore sem = new DistributedSemaphore(""+new Random().nextInt(1000), config,4800);
 
-        
-         try {
+    public static void main(String[] args) {
+        try {
+            String[][] config = {{"localhost", "5001"}, {"localhost", "5002"}};
+            DistributedSemaphore sem = new DistributedSemaphore("" + new Random().nextInt(1000), config);
+
             Thread.sleep(1500);
 
 
             System.out.println("Getting P");
 
             sem.P();
-            
+
             System.out.println("Got P");
-            
+
             Thread.sleep(3000);
-            
+
             System.out.println("Releasing V");
-            
+
+            sem.V();
+
+            System.out.println("Getting P");
+
+            sem.P();
+
+            System.out.println("Got P");
+
+            System.out.println("Releaseing V");
+
             sem.V();
 
         } catch (InterruptedException ex) {
         } catch (IOException ex) {
             Logger.getLogger(Main1.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
 }
