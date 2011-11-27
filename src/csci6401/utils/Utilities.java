@@ -18,6 +18,7 @@ public class Utilities {
     public static String[][] readConfiguratoinFile() throws FileNotFoundException{
         File file = null;
         
+        
         JFileChooser chooser = new JFileChooser();
         int returnVal = chooser.showOpenDialog(new JFrame("Select the configuration file"));
         
