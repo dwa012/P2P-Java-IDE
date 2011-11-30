@@ -4,11 +4,32 @@
  */
 package csci6401.javaeditor;
 
+import csci6401.utils.Utilities;
+import cscsi6401.distributedsemaphor.DistributedSemaphore;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.text.BadLocationException;
+
 /**
  *
  * @author daniel
  */
 public class GUI extends javax.swing.JFrame {
+    
+    private P2PController peerController;
+    private boolean connectedToPeers;
+    
+    private int mark;
 
     /**
      * Creates new form GUI
@@ -16,8 +37,25 @@ public class GUI extends javax.swing.JFrame {
     public GUI() {
         initComponents();
 //        jEditorPane1.setEditorKit(new SyntaxKit("java"));
+        this.setLocationRelativeTo(null);
         jsyntaxpane.DefaultSyntaxKit.initKit();
         jEditorPane1.setContentType("text/java");
+        jEditorPane1.setEditable(false);
+        
+        mark = 0;
+        connectedToPeers = false;
+        doneEditButton.setEnabled(false);
+        startEditButton.setEnabled(false);
+        
+//        try{
+//        Utilities.readConfiguratoinFile();
+//        }catch(FileNotFoundException ex){
+//            
+//        }
+    }
+    
+    JEditorPane getEditorPane(){
+        return this.jEditorPane1;
     }
 
     /** This method is called from within the constructor to
@@ -31,21 +69,50 @@ public class GUI extends javax.swing.JFrame {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jEditorPane1 = new javax.swing.JEditorPane();
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        startEditButton = new javax.swing.JButton();
+        doneEditButton = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
+        openFileMenuItem = new javax.swing.JMenuItem();
+        connectToMenuItem = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jScrollPane1.setViewportView(jEditorPane1);
 
-        jButton1.setText("Compile");
+        startEditButton.setText("Start Editing");
+        startEditButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startEditButtonActionPerformed(evt);
+            }
+        });
 
-        jButton2.setText("Save");
+        doneEditButton.setText("Done Editing");
+        doneEditButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                doneEditButtonActionPerformed(evt);
+            }
+        });
 
         jMenu1.setText("File");
+
+        openFileMenuItem.setText("Open File");
+        openFileMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openFileMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(openFileMenuItem);
+
+        connectToMenuItem.setText("Connect To Other Editors");
+        connectToMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                connectToMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(connectToMenuItem);
+
         jMenuBar1.add(jMenu1);
 
         jMenu2.setText("Edit");
@@ -57,29 +124,117 @@ public class GUI extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 567, Short.MAX_VALUE)
+                .addContainerGap())
             .addGroup(layout.createSequentialGroup()
-                .addGap(35, 35, 35)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 589, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1)))
-                .addGap(43, 43, 43))
+                .addGap(89, 89, 89)
+                .addComponent(startEditButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 205, Short.MAX_VALUE)
+                .addComponent(doneEditButton)
+                .addGap(99, 99, 99))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 406, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButton1)
-                    .addComponent(jButton2))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
-                .addGap(33, 33, 33))
+                    .addComponent(startEditButton, javax.swing.GroupLayout.DEFAULT_SIZE, 30, Short.MAX_VALUE)
+                    .addComponent(doneEditButton))
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void openFileMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openFileMenuItemActionPerformed
+        JFileChooser chooser = new JFileChooser();
+        FileFilter filter = new FileNameExtensionFilter("Java File", "java");
+        chooser.addChoosableFileFilter(filter);
+        int returnVal = chooser.showOpenDialog(this);
+        
+        if(returnVal == JFileChooser.APPROVE_OPTION){
+            File file = chooser.getSelectedFile();
+            try {
+                Scanner scanner = new Scanner(file);
+                jEditorPane1.setText("");
+                
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+        }
+    }//GEN-LAST:event_openFileMenuItemActionPerformed
+
+    private void connectToMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_connectToMenuItemActionPerformed
+        Object[] options = {"Select File",
+            "Cancel"};
+        
+        int n = JOptionPane.showOptionDialog(this,
+                "Please select the configuration file to use",
+                "Configuration File Selection",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[1]);
+        
+        if(n == JOptionPane.YES_OPTION){
+            try {
+                String[][]configuration = Utilities.readConfiguratoinFile();
+                peerController = new P2PController(this,configuration);
+                connectedToPeers = true;
+                startEditButton.setEnabled(true);
+            } catch (IOException ex) {
+                System.err.println("ERROR: " + ex.getMessage());
+            }
+        }
+            
+    }//GEN-LAST:event_connectToMenuItemActionPerformed
+
+    private void startEditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startEditButtonActionPerformed
+        if(connectedToPeers){
+           startEditButton.setEnabled(false);
+           doneEditButton.setEnabled(true);
+           
+           peerController.requestP();
+           
+           jEditorPane1.setEditable(true);
+           jEditorPane1.setCaretPosition(jEditorPane1.getDocument().getLength());
+//           mark = jEditorPane1.getCaretPosition();
+        }
+    }//GEN-LAST:event_startEditButtonActionPerformed
+
+    private void doneEditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_doneEditButtonActionPerformed
+        if(connectedToPeers){
+//            try {
+                startEditButton.setEnabled(true);
+                doneEditButton.setEnabled(false);
+                
+                peerController.requestV();
+                
+//                int newMark = jEditorPane1.getCaretPosition();
+//                
+//                System.out.println(mark);
+//                System.out.println(newMark-mark);
+//                System.out.println(jEditorPane1.getText(mark,newMark-mark));
+                
+//                peerController.sendData(jEditorPane1.getText(mark,newMark-mark));
+                 peerController.sendData(jEditorPane1.getText());
+                
+//                mark = newMark;
+                
+                jEditorPane1.setEditable(false);
+//            } catch (BadLocationException ex) {
+//                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+           
+           
+        }
+    }//GEN-LAST:event_doneEditButtonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -95,12 +250,15 @@ public class GUI extends javax.swing.JFrame {
          * http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
          */
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
+            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getCrossPlatformLookAndFeelClassName());
+//            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+
+//            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+//                if ("Nimbus".equals(info.getName())) {
+//                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+//                    break;
+//                }
+//            }
         } catch (ClassNotFoundException ex) {
             java.util.logging.Logger.getLogger(GUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
@@ -123,12 +281,14 @@ public class GUI extends javax.swing.JFrame {
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JMenuItem connectToMenuItem;
+    private javax.swing.JButton doneEditButton;
     private javax.swing.JEditorPane jEditorPane1;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JMenuItem openFileMenuItem;
+    private javax.swing.JButton startEditButton;
     // End of variables declaration//GEN-END:variables
 }

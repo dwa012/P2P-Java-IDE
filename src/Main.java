@@ -33,14 +33,15 @@ public class Main {
 
             System.out.println("Got P");
 
-            Thread.sleep(3000);
+            Thread.sleep(8000);
 
             System.out.println("Releasing V");
 
             sem.V();
 
             System.out.println("Getting P");
-
+Thread.sleep(2000);
+            
             sem.P();
 
             System.out.println("Got P");

@@ -9,6 +9,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class models a Helper process for a DistributedSemaphore object.
@@ -18,6 +20,8 @@ import java.util.Comparator;
  * @date November 25, 2011
  */
 public class Helper extends Thread {
+    
+    private static final int SLEEP_TIME_MS = 50;
 
     private LogicalClock clock; //the logocal clock for this helper
     private int semaphore; //the semaphore value 
@@ -29,6 +33,8 @@ public class Helper extends Thread {
                               //the queue will have the lowest timestamp value at
                               //the head
     String parentName; //the name of the parent object that created this helper
+    
+    private boolean running;
 
     /**
      * Will create a new Helper object with the given parameters.
@@ -47,6 +53,7 @@ public class Helper extends Thread {
         semaphore = 1;
         clock = new LogicalClock();
         this.parentName = parentName;
+        running = true;
         
         queue = new ArrayList<Message>();
         outputStreams = new PrintWriter[outputs.length];
@@ -63,8 +70,8 @@ public class Helper extends Thread {
      *                  message[0] = timestamp
      *                  message[1] = message kind (POP,VOP,ACK)
      *                  if message[1] == Message.ACK
-     *                       message[2] = POP || VOP
-     *                       message[3] = sender of POP || VOP
+     *                     message[2] = POP || VOP
+     *                     message[3] = sender of POP || VOP
      */
     synchronized void broadcast(String... message) {
         String toSend = "";
@@ -73,11 +80,29 @@ public class Helper extends Thread {
         for (String string : message) {
             toSend += string + ",";
         }
-
+       
         //send the message string to the other nodes
         for (PrintWriter writer : outputStreams) {
+            try {
+                Thread.currentThread().sleep(Helper.SLEEP_TIME_MS);
+            } catch (InterruptedException ex) {
+//                Logger.getLogger(Helper.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
             writer.println(toSend);
         }
+    }
+    
+    synchronized void close(){
+        
+        broadcast(parentName,clock.getTime()+"",Message.CLOSE);
+        
+        for (int i = 0 ; i < outputStreams.length; i++) {
+            outputStreams[i].close();
+        }
+        
+        running = false;
+        Thread.currentThread().interrupt();
     }
 
     /**
@@ -90,7 +115,8 @@ public class Helper extends Thread {
      *                  message[4] = sender of original message
      */
     synchronized void ack(String[] message) {
-
+               
+        
         //record the ACK message
         recordAck(message[3], message[4]);
         
@@ -105,16 +131,28 @@ public class Helper extends Thread {
      * The handler for POP messages
      */
     synchronized void requestP() {
-        broadcast(parentName, clock.getTime() + "", Message.POP);
-        clock.tick();
+        try {
+            Thread.currentThread().sleep(Helper.SLEEP_TIME_MS);
+            broadcast(parentName, clock.getTime() + "", Message.POP);
+            clock.tick();
+    //        System.out.println(parentName +": " +queue);
+        } catch (InterruptedException ex) {
+//            Logger.getLogger(Helper.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
      * The handler for VOP messages
      */
     synchronized void requestV() {
-        broadcast(parentName, clock.getTime() + "", Message.VOP);
-        clock.tick();
+        try {
+            Thread.currentThread().sleep(Helper.SLEEP_TIME_MS);
+            broadcast(parentName, clock.getTime() + "", Message.VOP);
+            clock.tick();
+    //        System.out.println(parentName +": " +queue);
+        } catch (InterruptedException ex) {
+//            Logger.getLogger(Helper.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**
@@ -136,36 +174,41 @@ public class Helper extends Thread {
             public int compare(Message o1, Message o2) {
                 int result = 0;
 
-                if (o1.getTimeStamp() < o2.getTimeStamp()) {
+                if (o1.getTimeStamp() > o2.getTimeStamp()) {
                     result = 1;
                 }
-                if (o1.getTimeStamp() < o2.getTimeStamp()) {
+                else if (o1.getTimeStamp() < o2.getTimeStamp()) {
                     result = -1;
                 }
 
                 return result;
             }
         });
-
-        //broadcast the acknowledged message
+        try {
+            Thread.currentThread().sleep(Helper.SLEEP_TIME_MS);
+        } catch (InterruptedException ex) {
+//            Logger.getLogger(Helper.class.getName()).log(Level.SEVERE, null, ex);
+        }
         broadcast(parentName, clock.getTime() + "", Message.ACK, message[2], message[0]);
         clock.tick();
+        
+//        System.out.println(parentName +": " +queue);
     }
 
     /**
      * The overriden method from Thread.
      * 
-     * While cause the Helper to run indefinitly.
+     * While cause the Helper to run indefinity.
      */
     @Override
     public void run() {
-        while (true);
+        while (!this.isInterrupted() && running);
     }
        
     /**
      * Check the queue for fully acknowledged VOP messages 
      */
-    private void checkFullyAckVOP(){
+    private synchronized  void checkFullyAckVOP(){
         
         //look for fully acknowledged Message.VOP messages
         for (int i = 0; i < queue.size(); i++) {
@@ -186,7 +229,7 @@ public class Helper extends Thread {
     /**
      * Check for fully acknowledged POP messages
      */
-    private void checkFullyAckPOP(){
+    private synchronized void checkFullyAckPOP(){
         //look for fully acknowledged Message.POP messages
         for (int i = 0; i < queue.size(); i++) {
             Message mess = queue.get(i);
@@ -201,12 +244,18 @@ public class Helper extends Thread {
                     //if the request was from my parent object, then notify
                     //them that they may proceed
                     if (mess.getSender().equals(parentName)) {
-                        parentWriter.println(clock.getTime() + "");
-                        clock.tick();
+                        try {
+                            Thread.currentThread().sleep(Helper.SLEEP_TIME_MS);
+                            parentWriter.println(clock.getTime() + "");
+                            clock.tick();
+                        } catch (InterruptedException ex) {
+//                            Logger.getLogger(Helper.class.getName()).log(Level.SEVERE, null, ex);
+                        }
                     }
 
                     queue.remove(i);
                     semaphore--;
+//                    i = queue.size(); //end loop early
                 }//end  number of acks and s > 0
             }//end message == Message.POP
         }//end for
@@ -222,6 +271,7 @@ public class Helper extends Thread {
      */
     private void createStreamsToNodes(Socket[] inputs, Socket[] outputs) {
         for (int i = 0; i < inputs.length; i++) {
+            
             try {
                 //create a new stream listener to listen to message from the
                 //other nodes
@@ -229,6 +279,7 @@ public class Helper extends Thread {
                 //create the OutputStream to the other nodes
                 outputStreams[i] = new PrintWriter(outputs[i].getOutputStream(), true);
             } catch (IOException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
             }
         }
     }
@@ -247,7 +298,9 @@ public class Helper extends Thread {
                 new HelperStreamListener(parent, this, clock).start();
                 parentWriter = new PrintWriter(parent.getOutputStream(), true);
             } catch (UnknownHostException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
             } catch (IOException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
             }
         } while (parent == null);
     }
@@ -255,7 +308,7 @@ public class Helper extends Thread {
     /**
      * Record a message as acknowledged.
      */
-    private void recordAck(String messageKind, String sender){
+    private synchronized void recordAck(String messageKind, String sender){
         //record the acknowledgement of the message
         for (int i = 0; i < queue.size(); i++) {
             Message mess = queue.get(i);
@@ -263,6 +316,7 @@ public class Helper extends Thread {
             //if the message matches the given parameters then mark it as
             //acknowledged
             if (mess.getSender().equals(sender) && mess.getMessage().equals(messageKind)) {
+//                if (mess.getMessage().equals(messageKind)) {
                 
                 mess.acknowledged();//tell the message that it has an ACK                
                 

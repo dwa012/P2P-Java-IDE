@@ -37,14 +37,15 @@ public class Utilities {
         
         String[][] config = new String[counter][2];
         
-        scanner.reset();
+        scanner.close();
+        scanner = new Scanner(file);
         
         counter = 0;
         
         while(scanner.hasNextLine()){
             config[counter][0] = scanner.next();
             config[counter][1] = scanner.next();
-            scanner.nextLine();
+            scanner.nextLine();            
             counter++;
         }
         

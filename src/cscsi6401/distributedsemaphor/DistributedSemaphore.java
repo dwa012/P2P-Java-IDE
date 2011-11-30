@@ -11,6 +11,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class models a distributed semaphore.
@@ -29,6 +31,10 @@ public class DistributedSemaphore{
     
     Socket[] inputs; //the array of input Sockets from the other nodes
     Socket[] outputs; //the array of ouput Sockets to the other nodes
+    
+    Helper helper;
+    
+    private ServerSocket serverSocketForNodes;
             
     /**
      * Creates a new DistributedSemaphor.
@@ -80,7 +86,7 @@ public class DistributedSemaphore{
         
         //get the timestamp and the permission to proceed from the helper
         long t = Long.parseLong(helperReader.readLine());
-        clock.compareAndSet(t);        
+        clock.compareAndSet(t);       
     }
     
     /**
@@ -94,7 +100,55 @@ public class DistributedSemaphore{
         clock.tick();
         
         //send the message to the Helper
-        helperWriter.println(message);        
+        helperWriter.println(message);
+    }
+    
+    public ServerSocket getServerSocket(){
+        return this.serverSocketForNodes;
+    }
+    
+    public void close(){
+        String message = name + "," + clock.getTime()+"," + Message.CLOSE;
+        helperWriter.println(message);
+        
+        
+        try {
+            helperReader.close();
+        } catch (IOException ex) {
+//            System.err.println("ERROR: " + ex.getMessage());
+//            Logger.getLogger(DistributedSemaphore.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        helperWriter.close();
+        
+        try {
+            serverSocketForNodes.close();
+        } catch (IOException ex) {
+//            System.err.println("ERROR: " + ex.getMessage());
+//            Logger.getLogger(DistributedSemaphore.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        for (Socket socket : inputs) {
+            try {
+                socket.close();
+            } catch (IOException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
+//                Logger.getLogger(DistributedSemaphore.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        for (Socket socket : outputs) {
+            try {
+                socket.close();
+            } catch (IOException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
+//                Logger.getLogger(DistributedSemaphore.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        
+        
+        
     }
     
     /**
@@ -120,11 +174,13 @@ public class DistributedSemaphore{
                 //create a new ServerSocket with the selected port
                 socketForHelper = new ServerSocket(portForHelper);
             } catch (IOException ex) {
+//                System.err.println("ERROR: " + ex.getMessage());
             }
         } while (socketForHelper == null);
 
         //create the Helper object with the appropriate information
-        new Helper(this.name, inputs, outputs, portForHelper).start();
+        helper = new Helper(this.name, inputs, outputs, portForHelper);
+        helper.start();
 
         //connect to the Helper
         Socket helper = socketForHelper.accept();
@@ -151,7 +207,7 @@ public class DistributedSemaphore{
         outputs = new Socket[numberOfNodes];
         
         //create the ServerSocket to accept incoming connections from the other nodes
-        final ServerSocket serverSocketForNodes = new ServerSocket(Integer.parseInt(configuration[0][1]));
+        serverSocketForNodes = new ServerSocket(Integer.parseInt(configuration[0][1]));
 
         //create a thread to accept incoming connections from the other nodes
         Thread input = new Thread() {
@@ -196,6 +252,8 @@ public class DistributedSemaphore{
             input.join();
             output.join();
         } catch (InterruptedException ex) {
+//            System.err.println("ERROR: " + ex.getMessage());
         }
+        
     }//end createConnectionsToNodes
 }

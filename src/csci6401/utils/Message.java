@@ -16,6 +16,7 @@ public class Message {
     public static final String POP = "p";
     public static final String REQ_P = "rp";
     public static final String REQ_V = "rv";
+    public static final String CLOSE = "c";
     
     
     private int numberOfACKs; //the number of acknowledgements for this Message
@@ -89,6 +90,6 @@ public class Message {
      *         {time: this.getTimeStamp(), message: this.getMessage(), sender: this.getSender()}
      */
     public String toString(){
-        return "{time: " + timeStamp + ", message: " + message + ", sender: " + sender + "}";
+        return "{time: " + timeStamp + ", message: " + message + ", sender: " + sender + ", acks: " + numberOfACKs +"}";
     }
 }
