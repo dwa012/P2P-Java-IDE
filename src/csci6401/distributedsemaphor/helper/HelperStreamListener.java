@@ -1,4 +1,4 @@
-package cscsi6401.distributedsemaphor.helper;
+package csci6401.distributedsemaphor.helper;
 
 import csci6401.utils.LogicalClock;
 import csci6401.utils.Message;

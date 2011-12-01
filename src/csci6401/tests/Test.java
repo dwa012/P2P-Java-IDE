@@ -1,5 +1,7 @@
+package csci6401.tests;
 
-import cscsi6401.distributedsemaphor.DistributedSemaphore;
+
+import csci6401.distributedsemaphor.DistributedSemaphore;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;

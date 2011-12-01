@@ -4,7 +4,7 @@
  */
 package csci6401.javaeditor;
 
-import cscsi6401.distributedsemaphor.DistributedSemaphore;
+import csci6401.distributedsemaphor.DistributedSemaphore;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,8 +34,11 @@ public class P2PController{
     private BufferedReader[] inputs;
     private PrintWriter[] outputs;
     
+    boolean running;
+    
     public P2PController(GUI parentView, final String[][] configuration) throws IOException {
 
+        running = true;
         this.parentView = parentView;
         this.configuration = configuration;
 
@@ -98,19 +101,24 @@ public class P2PController{
         semaphore.V();
     }
     
+    public void close(){
+        semaphore.close();
+        running = false;
+    }
+    
     public void sendData(String data){
         String[] s = data.split("\n");
         for (PrintWriter writer : outputs) {   
-            writer.println("\0");
+            writer.println(s.length);
             for (int i = 0; i < s.length; i++) {
+//                
+//                if(i > 0)
+//                    writer.println("");
                 
-                if(i > 0)
-                    writer.println("");
-                
-                if(s[i].length() > 0)
+//                if(s[i].length() > 0)
                     writer.println(s[i]);
-                else
-                    writer.println("");
+//                else
+//                    writer.println("");
             }
             
         }
@@ -169,52 +177,34 @@ public class P2PController{
         }
         
         public void run(){
-            while(true){
+            while(P2PController.this.running){
                 try {
-                    
-//                    StringBuilder message = new StringBuilder(1024);
-//                    char[] buffer = new char[1024];
-//                    int read = 0;
-//                    String s = "";
-                    
-//                    while ((s = input.readLine()) != null) {                        
-//                        message.append(s);
-//                        message.append("\n");
-//                        System.out.println(message.toString());
-//                                
-//                    }
-                    
-//                    do { 
-//                        read = input.read(buffer, 0, buffer.length);
-//
-//                        for (int i = 0; i < read; i++) {
-//                            message.append(buffer[i]);
-//                        }
-//                        
-//                    } while (read != -1);
-//                    
 //                   
 //                    P2PController.this.getGUIParent().getEditorPane().setText(message.toString());
                     P2PController.this.getGUIParent().getEditorPane().setCaretPosition(P2PController.this.getGUIParent().getEditorPane().getDocument().getLength()); 
                     
-                    String i = input.readLine();
+                    String lengthOfMessage = input.readLine();
+                    String message = "";
                     
-                    if (i.equals("\0")) {
-                        P2PController.this.getGUIParent().getEditorPane().setText("");
-                        P2PController.this.getGUIParent().getEditorPane().setCaretPosition(P2PController.this.getGUIParent().getEditorPane().getDocument().getLength());
-                    } else {
-
-
-                        if (i.length() == 0) {
-                            i = "\n";
-                        }
-
-                        P2PController.this.getGUIParent().getEditorPane().getDocument().insertString(P2PController.this.getGUIParent().getEditorPane().getCaretPosition(), i, null);
-                        P2PController.this.getGUIParent().getEditorPane().setCaretPosition(P2PController.this.getGUIParent().getEditorPane().getDocument().getLength());
+                    int length = Integer.parseInt(lengthOfMessage);
+                    
+                    for(int i = 0; i < length; i++){
+                        message += input.readLine() + "\n";
                     }
+                    
+                    P2PController.this.getGUIParent().getEditorPane().setText(message);
+                    
+//                    System.out.print(lengthOfMessage);
+//                    if (lengthOfMessage.equals("\0")) {
+//                        P2PController.this.getGUIParent().getEditorPane().setText("");
+//                        P2PController.this.getGUIParent().getEditorPane().setCaretPosition(P2PController.this.getGUIParent().getEditorPane().getDocument().getLength());
+//                    } else {
+//                        P2PController.this.getGUIParent().getEditorPane().getDocument().insertString(P2PController.this.getGUIParent().getEditorPane().getCaretPosition(), lengthOfMessage+"\n", null);
+//                        P2PController.this.getGUIParent().getEditorPane().setCaretPosition(P2PController.this.getGUIParent().getEditorPane().getDocument().getLength());
+//                    }
                     //setText(input.readLine());
-                } catch (BadLocationException ex) {
-                    Logger.getLogger(P2PController.class.getName()).log(Level.SEVERE, null, ex);
+//                } catch (BadLocationExcep0em.err.println("ERROR: " + ex.getMessage());
+//                    Logger.getLogger(P2PController.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
                     System.err.println("ERROR: " + ex.getMessage());
                 }

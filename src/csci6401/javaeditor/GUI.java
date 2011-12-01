@@ -5,20 +5,23 @@
 package csci6401.javaeditor;
 
 import csci6401.utils.Utilities;
-import cscsi6401.distributedsemaphor.DistributedSemaphore;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Scanner;
+import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.text.BadLocationException;
+import sun.reflect.generics.tree.Tree;
 
 /**
  *
@@ -27,26 +30,44 @@ import javax.swing.text.BadLocationException;
 public class GUI extends javax.swing.JFrame {
     
     private P2PController peerController;
+    private FileController fileController;
     private boolean connectedToPeers;
+    private boolean locked;
     
     private int mark;
+    
+    private ImageIcon lockIcon;
+    private ImageIcon unlockIcon;
 
     /**
      * Creates new form GUI
      */
     public GUI() {
+       
         initComponents();
+        this.setupLockIcons();
+        
 //        jEditorPane1.setEditorKit(new SyntaxKit("java"));
         this.setLocationRelativeTo(null);
         jsyntaxpane.DefaultSyntaxKit.initKit();
-        jEditorPane1.setContentType("text/java");
-        jEditorPane1.setEditable(false);
+        javaEditorPane.setContentType("text/java");
+//        jEditorPane1.setEditable(false);
+        
+        fileController = new FileController();
         
         mark = 0;
         connectedToPeers = false;
-        doneEditButton.setEnabled(false);
-        startEditButton.setEnabled(false);
         
+        outputPanel.setVisible(false);
+        
+        javaEditorPane.setBackground(Color.WHITE);
+        
+        locked = false;
+        lockButton.setIcon(unlockIcon);
+        lockButton.setToolTipText("Click to lock the file");
+        lockButton.setEnabled(false);
+//        
+        disconnectMenuItem.setEnabled(false);
 //        try{
 //        Utilities.readConfiguratoinFile();
 //        }catch(FileNotFoundException ex){
@@ -55,7 +76,23 @@ public class GUI extends javax.swing.JFrame {
     }
     
     JEditorPane getEditorPane(){
-        return this.jEditorPane1;
+        return this.javaEditorPane;
+    }
+    
+    private void setupLockIcons(){
+       lockIcon = createImageIcon("resource/lock.png", "Lock Icon");
+       unlockIcon = createImageIcon("resource/unlock.png", "Lock Icon");
+    }
+    
+    protected ImageIcon createImageIcon(String path,
+            String description) {
+        java.net.URL imgURL = getClass().getResource(path);
+        if (imgURL != null) {
+            return new ImageIcon(imgURL, description);
+        } else {
+            System.err.println("Couldn't find file: " + path);
+            return null;
+        }
     }
 
     /** This method is called from within the constructor to
@@ -67,35 +104,101 @@ public class GUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jEditorPane1 = new javax.swing.JEditorPane();
-        startEditButton = new javax.swing.JButton();
-        doneEditButton = new javax.swing.JButton();
-        jMenuBar1 = new javax.swing.JMenuBar();
-        jMenu1 = new javax.swing.JMenu();
+        editorScrollPane = new javax.swing.JScrollPane();
+        javaEditorPane = new javax.swing.JEditorPane();
+        outputPanel = new javax.swing.JPanel();
+        outputScrollPane = new javax.swing.JScrollPane();
+        outputTextArea = new javax.swing.JTextArea();
+        jToolBar1 = new javax.swing.JToolBar();
+        jButton1 = new javax.swing.JButton();
+        compileButton = new javax.swing.JButton();
+        jSeparator1 = new javax.swing.JToolBar.Separator();
+        lockButton = new javax.swing.JButton();
+        outputToggle = new javax.swing.JToggleButton();
+        menuBar = new javax.swing.JMenuBar();
+        fileMenu = new javax.swing.JMenu();
         openFileMenuItem = new javax.swing.JMenuItem();
+        saveMenuItem = new javax.swing.JMenuItem();
+        saveAsMenuItem = new javax.swing.JMenuItem();
+        compileMenuItem = new javax.swing.JMenuItem();
         connectToMenuItem = new javax.swing.JMenuItem();
-        jMenu2 = new javax.swing.JMenu();
+        disconnectMenuItem = new javax.swing.JMenuItem();
+        editMenu = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jScrollPane1.setViewportView(jEditorPane1);
+        javaEditorPane.setBackground(new java.awt.Color(254, 254, 254));
+        javaEditorPane.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        editorScrollPane.setViewportView(javaEditorPane);
 
-        startEditButton.setText("Start Editing");
-        startEditButton.addActionListener(new java.awt.event.ActionListener() {
+        outputTextArea.setColumns(20);
+        outputTextArea.setFont(new java.awt.Font("Courier New", 0, 12));
+        outputTextArea.setRows(5);
+        outputScrollPane.setViewportView(outputTextArea);
+
+        javax.swing.GroupLayout outputPanelLayout = new javax.swing.GroupLayout(outputPanel);
+        outputPanel.setLayout(outputPanelLayout);
+        outputPanelLayout.setHorizontalGroup(
+            outputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(outputScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 567, Short.MAX_VALUE)
+        );
+        outputPanelLayout.setVerticalGroup(
+            outputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(outputScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
+
+        jToolBar1.setFloatable(false);
+        jToolBar1.setRollover(true);
+
+        jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/csci6401/javaeditor/resource/save.png"))); // NOI18N
+        jButton1.setToolTipText("Save (Ctrl+s)");
+        jButton1.setFocusable(false);
+        jButton1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jButton1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startEditButtonActionPerformed(evt);
+                jButton1ActionPerformed(evt);
             }
         });
+        jToolBar1.add(jButton1);
 
-        doneEditButton.setText("Done Editing");
-        doneEditButton.addActionListener(new java.awt.event.ActionListener() {
+        compileButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/csci6401/javaeditor/resource/compile.png"))); // NOI18N
+        compileButton.setToolTipText("Compile (F5)");
+        compileButton.setFocusable(false);
+        compileButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        compileButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        compileButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                doneEditButtonActionPerformed(evt);
+                compileButtonActionPerformed(evt);
             }
         });
+        jToolBar1.add(compileButton);
+        jToolBar1.add(jSeparator1);
 
-        jMenu1.setText("File");
+        lockButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/csci6401/javaeditor/resource/unlock.png"))); // NOI18N
+        lockButton.setToolTipText("Lock Editor");
+        lockButton.setFocusable(false);
+        lockButton.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        lockButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        lockButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                lockButtonActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(lockButton);
+
+        outputToggle.setText("Toggle Output");
+        outputToggle.setFocusable(false);
+        outputToggle.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        outputToggle.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        outputToggle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                outputToggleActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(outputToggle);
+
+        fileMenu.setText("File");
 
         openFileMenuItem.setText("Open File");
         openFileMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -103,47 +206,80 @@ public class GUI extends javax.swing.JFrame {
                 openFileMenuItemActionPerformed(evt);
             }
         });
-        jMenu1.add(openFileMenuItem);
+        fileMenu.add(openFileMenuItem);
 
+        saveMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
+        saveMenuItem.setText("Save");
+        saveMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(saveMenuItem);
+
+        saveAsMenuItem.setText("Save As...");
+        saveAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveAsMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(saveAsMenuItem);
+
+        compileMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        compileMenuItem.setText("Compile");
+        compileMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                compileMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(compileMenuItem);
+
+        connectToMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F6, 0));
         connectToMenuItem.setText("Connect To Other Editors");
         connectToMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 connectToMenuItemActionPerformed(evt);
             }
         });
-        jMenu1.add(connectToMenuItem);
+        fileMenu.add(connectToMenuItem);
 
-        jMenuBar1.add(jMenu1);
+        disconnectMenuItem.setText("Disconnect from other editors");
+        disconnectMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                disconnectMenuItemActionPerformed(evt);
+            }
+        });
+        fileMenu.add(disconnectMenuItem);
 
-        jMenu2.setText("Edit");
-        jMenuBar1.add(jMenu2);
+        menuBar.add(fileMenu);
 
-        setJMenuBar(jMenuBar1);
+        editMenu.setText("Edit");
+        menuBar.add(editMenu);
+
+        setJMenuBar(menuBar);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 567, Short.MAX_VALUE)
-                .addContainerGap())
             .addGroup(layout.createSequentialGroup()
-                .addGap(89, 89, 89)
-                .addComponent(startEditButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 205, Short.MAX_VALUE)
-                .addComponent(doneEditButton)
-                .addGap(99, 99, 99))
+                .addContainerGap()
+                .addComponent(outputPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+            .addComponent(jToolBar1, javax.swing.GroupLayout.DEFAULT_SIZE, 591, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(editorScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 567, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 406, Short.MAX_VALUE)
+                .addComponent(jToolBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(startEditButton, javax.swing.GroupLayout.DEFAULT_SIZE, 30, Short.MAX_VALUE)
-                    .addComponent(doneEditButton))
+                .addComponent(editorScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 359, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(outputPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -157,15 +293,13 @@ public class GUI extends javax.swing.JFrame {
         int returnVal = chooser.showOpenDialog(this);
         
         if(returnVal == JFileChooser.APPROVE_OPTION){
-            File file = chooser.getSelectedFile();
             try {
-                Scanner scanner = new Scanner(file);
-                jEditorPane1.setText("");
-                
+                File file = chooser.getSelectedFile();
+                fileController.setFilePath(file.getAbsolutePath());
+                javaEditorPane.setText(fileController.readFile());
             } catch (FileNotFoundException ex) {
                 Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
         }
     }//GEN-LAST:event_openFileMenuItemActionPerformed
 
@@ -187,7 +321,20 @@ public class GUI extends javax.swing.JFrame {
                 String[][]configuration = Utilities.readConfiguratoinFile();
                 peerController = new P2PController(this,configuration);
                 connectedToPeers = true;
-                startEditButton.setEnabled(true);
+                
+                lockButton.setEnabled(true);
+                connectToMenuItem.setEnabled(false);
+                disconnectMenuItem.setEnabled(true);
+                
+                javaEditorPane.setEditable(false);
+                
+                if(fileController.fileOpen()){
+                    fileController.writeToFile(javaEditorPane.getText());
+                }
+                else{
+                    saveMenuItemActionPerformed(null);
+                }
+                    
             } catch (IOException ex) {
                 System.err.println("ERROR: " + ex.getMessage());
             }
@@ -195,46 +342,116 @@ public class GUI extends javax.swing.JFrame {
             
     }//GEN-LAST:event_connectToMenuItemActionPerformed
 
-    private void startEditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startEditButtonActionPerformed
-        if(connectedToPeers){
-           startEditButton.setEnabled(false);
-           doneEditButton.setEnabled(true);
-           
-           peerController.requestP();
-           
-           jEditorPane1.setEditable(true);
-           jEditorPane1.setCaretPosition(jEditorPane1.getDocument().getLength());
-//           mark = jEditorPane1.getCaretPosition();
+    private void saveMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveMenuItemActionPerformed
+        if(fileController.fileOpen()){
+            try {
+                fileController.writeToFile(javaEditorPane.getText());
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
-    }//GEN-LAST:event_startEditButtonActionPerformed
+        else {
+            JFileChooser chooser = new JFileChooser();
+            FileFilter filter = new FileNameExtensionFilter("Java File", "java");
+            chooser.addChoosableFileFilter(filter);
+            int returnVal = chooser.showSaveDialog(this);
 
-    private void doneEditButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_doneEditButtonActionPerformed
-        if(connectedToPeers){
-//            try {
-                startEditButton.setEnabled(true);
-                doneEditButton.setEnabled(false);
-                
-                peerController.requestV();
-                
-//                int newMark = jEditorPane1.getCaretPosition();
-//                
-//                System.out.println(mark);
-//                System.out.println(newMark-mark);
-//                System.out.println(jEditorPane1.getText(mark,newMark-mark));
-                
-//                peerController.sendData(jEditorPane1.getText(mark,newMark-mark));
-                 peerController.sendData(jEditorPane1.getText());
-                
-//                mark = newMark;
-                
-                jEditorPane1.setEditable(false);
-//            } catch (BadLocationException ex) {
-//                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-           
-           
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                try {
+                    File file = chooser.getSelectedFile();
+                    fileController.setFilePath(file.getAbsolutePath());
+                    fileController.writeToFile(javaEditorPane.getText());
+                } catch (FileNotFoundException ex) {
+//                    Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
         }
-    }//GEN-LAST:event_doneEditButtonActionPerformed
+    }//GEN-LAST:event_saveMenuItemActionPerformed
+
+    private void saveAsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsMenuItemActionPerformed
+        JFileChooser chooser = new JFileChooser();
+        FileFilter filter = new FileNameExtensionFilter("Java File", "java");
+        chooser.addChoosableFileFilter(filter);
+        int returnVal = chooser.showSaveDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                File file = chooser.getSelectedFile();
+                fileController.setFilePath(file.getAbsolutePath());
+                fileController.writeToFile(javaEditorPane.getText());
+            } catch (FileNotFoundException ex) {
+//                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_saveAsMenuItemActionPerformed
+
+    private void compileMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compileMenuItemActionPerformed
+        if(fileController.fileOpen()){
+            try {
+                fileController.writeToFile(javaEditorPane.getText());
+                String output = SystemCalls.compileJavaFile(fileController.getFilePath());
+//                new CompilerOutputFrame(output).setVisible(true);
+                
+                outputTextArea.setText(output);
+                outputPanel.setVisible(true);
+                outputToggle.setSelected(true);
+            } catch (IOException ex) {
+//                Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_compileMenuItemActionPerformed
+
+    private void lockButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lockButtonActionPerformed
+        if (!locked) {
+             lockButton.setIcon(lockIcon);
+            lockButton.setToolTipText("Click to unlock the file");
+
+            peerController.requestP();
+
+            javaEditorPane.setEditable(true);
+            javaEditorPane.setCaretPosition(javaEditorPane.getDocument().getLength());
+
+            locked = true;
+        } else {
+            
+            lockButton.setIcon(unlockIcon);
+            lockButton.setToolTipText("Click to lock the file");
+           
+            
+            peerController.sendData(javaEditorPane.getText());
+            
+            peerController.requestV();            
+
+            javaEditorPane.setEditable(false);
+
+            locked = false;
+        }
+    }//GEN-LAST:event_lockButtonActionPerformed
+
+    private void outputToggleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_outputToggleActionPerformed
+      if(outputToggle.isSelected()){
+          outputPanel.setVisible(true);
+      }
+      else{
+          outputPanel.setVisible(false);
+      }
+    }//GEN-LAST:event_outputToggleActionPerformed
+
+    private void compileButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compileButtonActionPerformed
+        this.compileMenuItemActionPerformed(null);
+    }//GEN-LAST:event_compileButtonActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        this.saveMenuItemActionPerformed(null);
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void disconnectMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_disconnectMenuItemActionPerformed
+        peerController.close();
+        disconnectMenuItem.setEnabled(false);
+        connectToMenuItem.setEnabled(true);
+        javaEditorPane.setEditable(true);
+        lockButton.setEnabled(false);
+    }//GEN-LAST:event_disconnectMenuItemActionPerformed
 
     /**
      * @param args the command line arguments
@@ -250,8 +467,8 @@ public class GUI extends javax.swing.JFrame {
          * http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
          */
         try {
-            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getCrossPlatformLookAndFeelClassName());
-//            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+//            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getCrossPlatformLookAndFeelClassName());
+            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
 
 //            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
 //                if ("Nimbus".equals(info.getName())) {
@@ -281,14 +498,25 @@ public class GUI extends javax.swing.JFrame {
         });
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton compileButton;
+    private javax.swing.JMenuItem compileMenuItem;
     private javax.swing.JMenuItem connectToMenuItem;
-    private javax.swing.JButton doneEditButton;
-    private javax.swing.JEditorPane jEditorPane1;
-    private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
-    private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JMenuItem disconnectMenuItem;
+    private javax.swing.JMenu editMenu;
+    private javax.swing.JScrollPane editorScrollPane;
+    private javax.swing.JMenu fileMenu;
+    private javax.swing.JButton jButton1;
+    private javax.swing.JToolBar.Separator jSeparator1;
+    private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JEditorPane javaEditorPane;
+    private javax.swing.JButton lockButton;
+    private javax.swing.JMenuBar menuBar;
     private javax.swing.JMenuItem openFileMenuItem;
-    private javax.swing.JButton startEditButton;
+    private javax.swing.JPanel outputPanel;
+    private javax.swing.JScrollPane outputScrollPane;
+    private javax.swing.JTextArea outputTextArea;
+    private javax.swing.JToggleButton outputToggle;
+    private javax.swing.JMenuItem saveAsMenuItem;
+    private javax.swing.JMenuItem saveMenuItem;
     // End of variables declaration//GEN-END:variables
 }

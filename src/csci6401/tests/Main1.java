@@ -1,8 +1,9 @@
+package csci6401.tests;
 
-import cscsi6401.distributedsemaphor.DistributedSemaphore;
+
+import csci6401.distributedsemaphor.DistributedSemaphore;
 import java.io.IOException;
 import java.util.Random;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /*
@@ -12,19 +13,18 @@ import java.util.logging.Logger;
 
 /**
  *
- * configuration data.
- * the first entry will be my own self
- * the port is the listening port
  * @author daniel
  */
-public class Main {
-
+public class Main1 {
     public static void main(String[] args) {
         try {
-            String[][] config = {{"localhost", "5001"}, {"localhost", "5002"}};
-            DistributedSemaphore sem = new DistributedSemaphore("" + new Random().nextInt(1000), config);
+            String[][] config = {{"localhost", "5002"}, {"localhost", "5001"}};
+            DistributedSemaphore sem = new DistributedSemaphore("" + new Random().nextInt(100), config);
+//        sem.start();
+//        System.out.println("Connected");
 
-            Thread.sleep(1500);
+
+            Thread.sleep(3000);
 
 
             System.out.println("Getting P");
@@ -33,16 +33,14 @@ public class Main {
 
             System.out.println("Got P");
 
-            Thread.sleep(8000);
-
-            System.out.println("Releasing V");
+            System.out.println("Releaseing V");
 
             sem.V();
 
             System.out.println("Getting P");
-Thread.sleep(2000);
-            
+
             sem.P();
+            Thread.sleep(3000);
 
             System.out.println("Got P");
 
@@ -52,8 +50,8 @@ Thread.sleep(2000);
 
         } catch (InterruptedException ex) {
         } catch (IOException ex) {
-            Logger.getLogger(Main1.class.getName()).log(Level.SEVERE, null, ex);
+//            Logger.getLogger(Main1.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        while (true);
     }
 }

@@ -1,8 +1,8 @@
-package cscsi6401.distributedsemaphor;
+package csci6401.distributedsemaphor;
 
 import csci6401.utils.LogicalClock;
 import csci6401.utils.Message;
-import cscsi6401.distributedsemaphor.helper.Helper;
+import csci6401.distributedsemaphor.helper.Helper;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
